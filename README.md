@@ -123,7 +123,7 @@ client = OpenAI(
 | メソッド | パス | ロール | 説明 |
 |---|---|---|---|
 | POST | `/v1/token` | agent | `{"upstream":"openai","ttl":"5m","purpose":"..."}` → 短命トークン |
-| ANY | `/v1/proxy/{upstream}/{path...}` | agent | キーを注入して転送 |
+| ANY | `/v1/proxy/{upstream}/{path...}` | agent | キーを注入して転送。トークン期限切れ・回数上限は `X-Kagi-Token: renew` 付きで返す |
 | GET | `/v1/secrets/{name}` | agent | `secret` グラントがある場合のみ値を返す（CI用途など） |
 | GET/PUT/DELETE | `/v1/admin/secrets[/{name}]` | admin | 秘密の管理 |
 | POST | `/v1/admin/revoke` | admin | `{"token_id":"..."}` で即時失効 |

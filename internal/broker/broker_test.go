@@ -226,8 +226,15 @@ func TestBudgetRevokeAndPolicyReload(t *testing.T) {
 			t.Fatalf("request %d: %d", i, code)
 		}
 	}
-	if code, _ := e.do(yata, "POST", chat, tok, ""); code != 429 {
-		t.Fatalf("budget not enforced: %d", code)
+	req, _ := http.NewRequest("POST", e.srv.URL+chat, nil)
+	req.Header.Set("Authorization", "Bearer "+tok)
+	resp, err := yata.Do(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	resp.Body.Close()
+	if resp.StatusCode != 429 || resp.Header.Get("X-Kagi-Token") != "renew" {
+		t.Fatalf("budget not enforced or not marked renewable: %d %q", resp.StatusCode, resp.Header.Get("X-Kagi-Token"))
 	}
 
 	tok2, id2 := e.token(yata, `{"upstream":"openai"}`)

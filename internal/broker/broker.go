@@ -328,7 +328,7 @@ func (b *Broker) authorizeToken(r *http.Request, p *principal, key string) (*tok
 		b.usage[c.ID] = u
 	}
 	if c.MaxRequests > 0 && u.used >= c.MaxRequests {
-		return nil, nil, http.StatusTooManyRequests, "token request budget exhausted"
+		return nil, nil, http.StatusTooManyRequests, errBudgetExhausted
 	}
 	u.used++
 	return c, g, 0, ""
@@ -357,7 +357,7 @@ func (b *Broker) handleProxy(w http.ResponseWriter, r *http.Request, p *principa
 	c, g, code, why := b.authorizeToken(r, p, "upstream:"+name)
 	if code != 0 {
 		b.deny(p, action+" "+target, why)
-		writeErr(w, code, why)
+		writeTokenErr(w, code, why)
 		return
 	}
 	if !g.Permits(r.Method, upPath) {
@@ -435,7 +435,7 @@ func (b *Broker) handleReveal(w http.ResponseWriter, r *http.Request, p *princip
 	c, _, code, why := b.authorizeToken(r, p, key)
 	if code != 0 {
 		b.deny(p, "reveal "+name, why)
-		writeErr(w, code, why)
+		writeTokenErr(w, code, why)
 		return
 	}
 	v, err := b.cfg.Vault.Get(name)
@@ -535,6 +535,17 @@ func writeJSON(w http.ResponseWriter, code int, v any) {
 	w.Header().Set("Cache-Control", "no-store")
 	w.WriteHeader(code)
 	json.NewEncoder(w).Encode(v)
+}
+
+const errBudgetExhausted = "token request budget exhausted"
+
+// writeTokenErr marks broker-side token failures that a client may fix by
+// fetching a fresh token, so SDKs can tell them apart from an upstream 401/429.
+func writeTokenErr(w http.ResponseWriter, code int, why string) {
+	if why == token.ErrExpired.Error() || why == errBudgetExhausted {
+		w.Header().Set("X-Kagi-Token", "renew")
+	}
+	writeErr(w, code, why)
 }
 
 func writeErr(w http.ResponseWriter, code int, msg string) {
