@@ -7,3 +7,5 @@
 /policy.json
 coverage.out
 *.key
+__pycache__/
+*.pyc
