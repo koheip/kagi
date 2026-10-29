@@ -1,7 +1,9 @@
-bin/
-pki/
-data/
-secrets/
-policy.json
+# Generated at runtime — anchored to the repo root so they never match
+# source directories such as internal/pki/.
+/bin/
+/pki/
+/data/
+/secrets/
+/policy.json
 coverage.out
 *.key
