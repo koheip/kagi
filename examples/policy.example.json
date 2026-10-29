@@ -1,0 +1,43 @@
+{
+  "upstreams": {
+    "openai": {
+      "base_url": "https://api.openai.com",
+      "secret": "openai-api-key",
+      "inject": { "header": "Authorization", "format": "Bearer {secret}" }
+    },
+    "github": {
+      "base_url": "https://api.github.com",
+      "secret": "github-readonly-pat",
+      "inject": { "header": "Authorization", "format": "token {secret}" }
+    }
+  },
+  "agents": {
+    "yata": {
+      "grants": [
+        {
+          "upstream": "openai",
+          "max_ttl": "15m",
+          "max_requests": 200,
+          "allow": [
+            { "method": "POST", "path": "/v1/chat/completions" },
+            { "method": "POST", "path": "/v1/embeddings" }
+          ]
+        },
+        {
+          "upstream": "github",
+          "max_ttl": "5m",
+          "max_requests": 50,
+          "allow": [
+            { "method": "GET", "path": "/repos/koheip/yata/issues" },
+            { "method": "GET", "path": "/repos/koheip/yata/contents/*" }
+          ]
+        }
+      ]
+    },
+    "ci-deployer": {
+      "grants": [
+        { "secret": "db-migration-password", "max_ttl": "5m", "max_requests": 1 }
+      ]
+    }
+  }
+}

@@ -1,0 +1,54 @@
+# /etc/systemd/system/kagid.service
+# パスフレーズは systemd-creds で暗号化して渡す:
+#   systemd-creds encrypt --name=kagi_passphrase passphrase.txt /etc/kagi/passphrase.cred
+[Unit]
+Description=kagi secret broker for AI agents
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/kagid \
+  -tls-cert=/etc/kagi/pki/broker.crt -tls-key=/etc/kagi/pki/broker.key \
+  -client-ca=/etc/kagi/pki/ca.crt -policy=/etc/kagi/policy.json \
+  -vault=/var/lib/kagi/vault.json -audit=/var/lib/kagi/audit.log -pq-only
+ExecReload=/bin/kill -HUP $MAINPID
+LoadCredentialEncrypted=kagi_passphrase:/etc/kagi/passphrase.cred
+Environment=KAGI_PASSPHRASE_FILE=%d/kagi_passphrase
+Restart=on-failure
+RestartSec=2s
+
+DynamicUser=yes
+StateDirectory=kagi
+StateDirectoryMode=0700
+UMask=0077
+
+# --- sandboxing (systemd-analyze security kagid で確認) ---
+NoNewPrivileges=yes
+CapabilityBoundingSet=
+AmbientCapabilities=
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectKernelLogs=yes
+ProtectControlGroups=yes
+ProtectClock=yes
+ProtectHostname=yes
+ProtectProc=invisible
+ProcSubset=pid
+RestrictNamespaces=yes
+RestrictRealtime=yes
+RestrictSUIDSGID=yes
+LockPersonality=yes
+MemoryDenyWriteExecute=yes
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+SystemCallArchitectures=native
+SystemCallFilter=@system-service
+SystemCallFilter=~@privileged @resources
+LimitNOFILE=65536
+
+[Install]
+WantedBy=multi-user.target

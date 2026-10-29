@@ -1,0 +1,38 @@
+# docker compose up -d
+# 事前に: ./kagi-ca で pki/ を作成、policy.json を用意、secrets/passphrase を作成（chmod 600）
+services:
+  kagid:
+    build: .
+    image: kagi:local
+    restart: unless-stopped
+    ports:
+      - "8443:8443"            # mTLS API（証明書がなければハンドシェイクで拒否）
+      - "127.0.0.1:9090:9090"  # metrics/health はホストのループバックのみ
+    environment:
+      KAGI_PASSPHRASE_FILE: /run/secrets/kagi_passphrase
+    secrets:
+      - kagi_passphrase
+    volumes:
+      - ./pki/ca.crt:/etc/kagi/pki/ca.crt:ro
+      - ./pki/broker.crt:/etc/kagi/pki/broker.crt:ro
+      - ./pki/broker.key:/etc/kagi/pki/broker.key:ro
+      - ./policy.json:/etc/kagi/policy.json:ro
+      - kagi-data:/var/lib/kagi
+    # コンテナのハードニング
+    read_only: true
+    cap_drop: [ALL]
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 256
+    mem_limit: 256m
+    cpus: 1.0
+    logging:
+      driver: json-file
+      options: { max-size: "10m", max-file: "5" }
+
+secrets:
+  kagi_passphrase:
+    file: ./secrets/passphrase
+
+volumes:
+  kagi-data:
