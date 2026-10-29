@@ -11,7 +11,7 @@ fuzz:
 	go test ./internal/token -run '^$$' -fuzz FuzzVerify -fuzztime 60s
 
 vuln:
-	go run golang.org/x/vuln/cmd/govulncheck@v1.1.4 ./...
+	go run golang.org/x/vuln/cmd/govulncheck@v1.9.0 ./...
 
 demo:
 	./scripts/demo.sh
